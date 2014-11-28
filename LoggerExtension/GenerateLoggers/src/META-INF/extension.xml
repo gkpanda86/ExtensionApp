@@ -1,0 +1,29 @@
+<extension id="com.keste.logger" version="1.1" esdk-version="1.0"
+           rsbundle-class="com.keste.logger.Res"
+           xmlns="http://jcp.org/jsr/198/extension-manifest">
+  <name>Audit Logging</name>
+  <owner>Keste</owner>
+  <dependencies>
+    <import>oracle.jdeveloper</import>
+    <import>oracle.ide.audit</import>
+    <import>oracle.ide.audit.core</import>
+    <import>oracle.ide</import>
+    <import>oracle.javacore</import>
+    <import>oracle.jdeveloper.refactoring</import>
+  </dependencies>
+  <classpaths>
+    <classpath>../../../oracle_common/modules/oracle.javatools_11.1.1/javatools-nodeps.jar</classpath>
+  </classpaths>
+  <hooks>
+    <jdeveloper-hook xmlns="http://xmlns.oracle.com/jdeveloper/1013/extension">
+      <addins>
+        <addin>com.keste.logger.AuditLoggerAddin</addin>
+      </addins>
+    </jdeveloper-hook>
+    <feature-hook>
+      <description>Audits the java classes and reports all the methods which do not have logging enabled. 
+                   Transforms the methods and adds logger statements</description>
+      <optional>true</optional>
+    </feature-hook>
+  </hooks>
+</extension>
