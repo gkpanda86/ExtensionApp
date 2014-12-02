@@ -105,8 +105,8 @@ public class ApplyLoggerStatements extends Transform {
     private void applyLoggerStatementsToMethod(SourceMethod method, String logVariable){
         String methodName = method.getName();
         SourceFactory factory = method.getOwningSourceFile().getFactory();
-        SourceStatement startStmt = factory.createStatementFromText(logVariable+".info(\" Start of method "+methodName+"\");");
-        SourceStatement endStmt = factory.createStatementFromText(logVariable+".info(\" End of method "+methodName+"\");");
+        SourceStatement startStmt = factory.createStatementFromText(logVariable+".info(\" Start of method "+method.getOwningClass().getName()+"."+methodName+"\");");
+        SourceStatement endStmt = factory.createStatementFromText(logVariable+".info(\" End of method "+method.getOwningClass().getName()+"."+methodName+"\");");
         SourceElement lastElem = (SourceElement)method.getBlock().getChildren().get(method.getBlock().getChildren().size()-1);
         if(lastElem instanceof SourceReturnStatement){
             method.getBlock().getChildren().add(method.getBlock().getChildren().size()-1, endStmt);
@@ -122,8 +122,9 @@ public class ApplyLoggerStatements extends Transform {
                                                    String logVariable) {
         String methodName = method.getName();
         SourceFactory factory = method.getOwningSourceFile().getFactory();
-        SourceStatement startStmt = factory.createStatementFromText(logVariable+".severe(\" Exception in catch block for method:: "+methodName+"\");");
-        sc.getText();
+        String var = sc.getCatchVariable().getName();
+        var = var + ".getMessage()";
+        SourceStatement startStmt = factory.createStatementFromText(logVariable+".severe(\" Exception in catch block for method:: "+methodName+" \"+"+var+");");
         SourceElement[] elems = sc.getContainedElements();
         for(SourceElement element : elems){
             System.out.println("Text "+element.getText());
