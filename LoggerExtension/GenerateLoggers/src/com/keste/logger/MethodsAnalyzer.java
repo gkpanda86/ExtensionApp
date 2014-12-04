@@ -85,12 +85,14 @@ public class MethodsAnalyzer extends Analyzer {
         }
         if(fileHasLoggerDeclared){
             SourceBlock block = method.getBlock();
-            SourceElement elem = (SourceElement)block.getChildren().get(0);
-            if(elem instanceof SourceStatement ){
-                if(((SourceStatement)elem).getText().contains(logVariable)){
-                    hasLogger = true;
+            for(Object elem : block.getChildren()){
+                if(elem instanceof SourceStatement ){
+                    if(((SourceStatement)elem).getText().contains(logVariable)){
+                        hasLogger = true;
+                    }
                 }
             }
+            
         }
         return hasLogger;
     }

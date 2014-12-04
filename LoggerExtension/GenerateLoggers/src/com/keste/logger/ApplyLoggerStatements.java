@@ -7,8 +7,10 @@ import oracle.javatools.parser.java.v2.JavaConstants;
 import oracle.javatools.parser.java.v2.SourceFactory;
 import oracle.javatools.parser.java.v2.internal.symbol.stmt.BlockStmt;
 import oracle.javatools.parser.java.v2.model.SourceBlock;
+import oracle.javatools.parser.java.v2.model.SourceClass;
 import oracle.javatools.parser.java.v2.model.SourceElement;
 import oracle.javatools.parser.java.v2.model.SourceFieldDeclaration;
+import oracle.javatools.parser.java.v2.model.SourceFieldVariable;
 import oracle.javatools.parser.java.v2.model.SourceFile;
 import oracle.javatools.parser.java.v2.model.SourceImport;
 import oracle.javatools.parser.java.v2.model.SourceLocalVariable;
@@ -77,6 +79,8 @@ public class ApplyLoggerStatements extends Transform {
     }
     
     private String checkIfLoggerDeclaredInClass(List allSiblings){
+        
+        
         String logVariable = "";
         for(Object o : allSiblings){
             System.out.println("*** "+o.getClass());
@@ -91,18 +95,38 @@ public class ApplyLoggerStatements extends Transform {
     }
     
     private String applyLoggerDeclarationInClass(SourceMethod method){
+        String loggerFieldName = "_logger";
+        List<String> fieldNames = new ArrayList<String>();
+        
+        for(Object o : method.getEnclosingClass().getSourceBody().getChildren()){
+            if(o instanceof SourceFieldDeclaration){
+                SourceFieldDeclaration sf = (SourceFieldDeclaration)o;
+                for(Object o1 : sf.getVariables()){
+                    if(o1 instanceof SourceFieldVariable){
+                        SourceFieldVariable sf1 = (SourceFieldVariable)o1;
+                        fieldNames.add(sf1.getName());
+                    }
+                }
+            }
+        }
+        int i = 1;
+        while(fieldNames.contains(loggerFieldName)){
+            loggerFieldName += i;
+            ++i;
+        }
+        
         SourceFactory factory = method.getOwningSourceFile().getFactory();
         SourceImport importString = factory.createImportDeclaration("oracle.adf.share.logging.ADFLogger");
         importString.addSelf(method.getOwningSourceFile());
         String nameOfClass = method.getOwningClass().getName() + ".class";
-        SourceFieldDeclaration sfd = factory.createFieldDeclaration(factory.createType("ADFLogger"), "_logger", 
+        SourceFieldDeclaration sfd = factory.createFieldDeclaration(factory.createType("ADFLogger"), loggerFieldName, 
                                                                     factory.createExpression("ADFLogger.createADFLogger("+nameOfClass+")"));
         sfd.addModifiers(JavaConstants.ACC_PRIVATE);
         sfd.addModifiers(JavaConstants.ACC_STATIC);
         sfd.addModifiers(JavaConstants.ACC_FINAL);
         sfd.addSelf(method.getEnclosingClass());
         
-        return "_logger";
+        return loggerFieldName;
     }
     
     private void applyLoggerStatementsToMethod(SourceMethod method, String logVariable){
