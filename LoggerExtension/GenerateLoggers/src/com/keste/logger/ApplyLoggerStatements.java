@@ -34,6 +34,22 @@ public class ApplyLoggerStatements extends Transform {
         super(new JavaTransformAdapter(), name, localizer);
     }
     
+    public void apply(JavaTransformContext context, SourceClass sc) {
+        
+        for(Object o : sc.getSourceBody().getChildren()){
+            if(o instanceof SourceMethod){
+                SourceMethod method = (SourceMethod)o;
+                if(!method.isConstructor() && !containsLogger(method)){
+                    apply(context, method);
+                }
+            }
+        }
+      
+       
+        
+
+    }
+    
     public void apply(JavaTransformContext context, SourceMethod method) {
         
         //Check if the ADFLogger field is declared in the class and if yes, fetch the variable name
@@ -185,7 +201,7 @@ public class ApplyLoggerStatements extends Transform {
             method.getBlock().getChildren().add(method.getBlock().getChildren().size()-1, endStmt);
         }
         else{
-            method.getBlock().getChildren().add(method.getBlock().getChildren().size()-1, slvdEnd);
+            method.getBlock().getChildren().add(method.getBlock().getChildren().size(), slvdEnd);
             method.getBlock().getChildren().add(method.getBlock().getChildren().size(), endStmt);
         }
         // Add the start variable and start logger statment right at the beginning of the method
@@ -207,5 +223,32 @@ public class ApplyLoggerStatements extends Transform {
                 ((SourceBlockStatement)element).getBlock().getChildren().add(0, startStmt);
             }
         }
+    }
+    
+    private boolean containsLogger(SourceMethod method){
+        boolean hasLogger = false;
+        boolean fileHasLoggerDeclared = false;
+        String logVariable = "";
+        for(Object o : method.getParent().getChildren()){
+            if(o instanceof SourceFieldDeclaration){
+                if(((SourceFieldDeclaration)o).getSourceType().getName().equals("ADFLogger")){
+                    fileHasLoggerDeclared = true;
+                    logVariable = ((SourceElement)((SourceFieldDeclaration)o).getChildren().get(1)).getText();
+                    logVariable = logVariable.split(" ")[0];
+                }
+            }
+        }
+        if(fileHasLoggerDeclared){
+            SourceBlock block = method.getBlock();
+            for(Object elem : block.getChildren()){
+                if(elem instanceof SourceStatement ){
+                    if(((SourceStatement)elem).getText().contains(logVariable)){
+                        hasLogger = true;
+                    }
+                }
+            }
+            
+        }
+        return hasLogger;
     }
 }

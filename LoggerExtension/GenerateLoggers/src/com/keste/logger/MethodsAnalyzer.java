@@ -2,6 +2,7 @@ package com.keste.logger;
 
 import oracle.javatools.parser.java.v2.internal.symbol.stmt.BlockStmt;
 import oracle.javatools.parser.java.v2.model.SourceBlock;
+import oracle.javatools.parser.java.v2.model.SourceClass;
 import oracle.javatools.parser.java.v2.model.SourceElement;
 import oracle.javatools.parser.java.v2.model.SourceFieldDeclaration;
 import oracle.javatools.parser.java.v2.model.SourceFile;
@@ -28,21 +29,41 @@ public class MethodsAnalyzer extends Analyzer {
         new Category("sample-category", LOCALIZER);
 
     private static final String FIX_METHOD_NAME = "fix-method";
+    private static final String FIX_CLASS_NAME = "fix-class";
 
     private final ApplyLoggerStatements fixMethodName =
         new ApplyLoggerStatements(FIX_METHOD_NAME, LOCALIZER);
+    
+    private final ApplyLoggerStatements fixClassName =
+        new ApplyLoggerStatements(FIX_CLASS_NAME, LOCALIZER);
 
     private final Rule NAME_VERIFICATION =
         new Rule("name-verification", SAMPLE_CATEGORY, Severity.WARNING,
                  LOCALIZER, fixMethodName);
+    
+    private final Rule NAME_VERIFICATION_2 =
+        new Rule("name-verification", SAMPLE_CATEGORY, Severity.WARNING,
+                 LOCALIZER, fixClassName);
 
     {
         // Do this to make the rule enabled by default.
         NAME_VERIFICATION.setEnabled(true);
+        NAME_VERIFICATION_2.setEnabled(true);
     }
 
     public Rule[] getRules() {
-        return new Rule[] { NAME_VERIFICATION };
+        return new Rule[] { NAME_VERIFICATION, NAME_VERIFICATION_2 };
+    }
+    
+    public void enter(AuditContext ctx, SourceClass sc) {
+      
+        if (!NAME_VERIFICATION_2.isEnabled()) 
+             return;
+        
+        if (!containsLogger(sc)) {
+            ViolationReport vr = ctx.report(NAME_VERIFICATION_2);
+            vr.addParameter("name", sc.getName());
+        }
     }
 
     public void enter(AuditContext ctx, SourceMethod method) {
@@ -133,5 +154,31 @@ public class MethodsAnalyzer extends Analyzer {
             
         }
         return hasLogger;
+    }
+
+    private boolean containsLogger(SourceClass sc) {
+        boolean hasADFLoggerDeclaration = false;
+        for(Object o : sc.getSourceBody().getChildren()){
+            if(o instanceof SourceFieldDeclaration){
+                if(((SourceFieldDeclaration)o).getSourceType().getName().equals("ADFLogger")){
+                    hasADFLoggerDeclaration = true;
+                }
+            }
+        }
+        if (!hasADFLoggerDeclaration) {
+            return false;
+        }
+
+        for (Object o : sc.getSourceBody().getChildren()) {
+            if (o instanceof SourceMethod) {
+                SourceMethod method = (SourceMethod)o;
+                if (!method.isConstructor() && !containsLogger(method)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+        
     }
 }
